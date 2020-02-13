@@ -1,0 +1,81 @@
+---
+title: "Using the surfspec package for sediment analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{manual}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This tutorial will guide through an analysis process to demonstrate the intended use of the tools. Throughout this document we will use a sample data of a sediment disk. The goal of the data and analysis is to retrieve a vertical profile of phytobenthos distribution. 
+
+The sediment disk was sampled in the Scheldt estuary, Belgium, with a contact core having 2 cm radius and 2 mm depth, and preserved in liquid nitrogen until analysis. While frozen, the disk was broken in two halves. One half had the upper surface imaged, while the other had its cross-sectional surface imaged. The imaging spectrometer was a SOC-710P (Surface Optics Corporation, San Diego, US), with 128 bands covering the range from 377.80 nm to 1035.97 nm with a 5 nm spectral sampling. This imaging system had an Instantaneus Field of View (IFOV) of 0.2507 mrad, that translates to 80 $\mu m$ resolution with our measurement setup.
+
+The images recorded by the system were processed with the vendor's software to convert the raw digital counts to physical units and apply all necessary corrections (smile correction, flat field corrections, etc). The digital counts data were termed "raw" and the calibrated data (radiance) termed "rad":
+
+```{r setup}
+library(surfspec)
+fl.raw <- system.file("extdata", "sed_95.80801ms_f11_AP1.5.cube", package = "surfspec")
+fl.rad <- system.file("extdata", "sed_95.80801ms_f11_AP1.5_rad.cube.float", package = "surfspec")
+```
+
+## The saturation mask
+
+Despite optimizations for the integration time, it may be the case that pixels or regions in the area being scanned will be saturated (maximum digital count of the system). Those can happen surfaces with specular reflectance (e.g., glint) and in areas or wavelength ranges were material exitant radiance * detector band response is much higher than for the image average or spectral average. When converting to physical units, those saturated pixels can be harder to detect since their values will vary per image. 
+
+The saturation mask function loads the raw hyperspectral cube and creates a mask of saturated values. If run with the defaults the function will return a single mask, where a pixel is set to NA if it is saturated in any of the bands. This is useful if the exitant radiance * detector band response is within a range that can be accommodated in the radiometric resolution of the instrument for all bands. However, different situations might occur, e.g., for a material with low refletcance in the visible but high reflectance in the NIR. In that case in order to achieve appropriate signal to noise ratio in the visible it might be necessary to saturate the NIR range if the integration time is spectrally constant. A second image of the same surface can then be made underexposing in the visible to not saturate in the NIR. In those cases the saturation mask function can be called with defined wavelength ranges, e.g, wrange = c(400, 700) in the first image and wrange = c(700, 1500) for the second one. 
+
+It is also possible to use a set of specific wavelenths for the saturation mask. This is of interest when only specific bands will be used in further analysis (e.g., NDVI calculation). This can be done by passiA vector with specific wavelengths (the bands with closest central wavelengths will be used) can also be passed. Note that in those cases, is the user's responsibility to only use in their final analysis the subset of bands that were used for the saturation mask calculations.
+
+An option that bypasses the need to care on wavelength ranges is to set argument layers to TRUE. In that case the returned mask is a raster stack with a mask per layer, but will be slower than processing only a defined range if only a defined range is necessary. This option is also useful in exploring the data to know in which bands the saturation happens to better plan future acquisitions. 
+
+In the following example, we will run the saturation mask function with the defaults (using all bands and returning a single mask as a raster layer).
+
+```{r, fig.dim = c(5, 4)}
+( mk <- mask_s(fl.raw) )
+plot(mk, colNA = 'red', col = "white", main = "Saturated pixels")
+```
+
+## Reading and masking the calibrated data
+
+Once the saturation mask was calculated, we can import and mask the calibrated data. This is performed with the function read_cube by passing the mask as the second argument. It is also possible to call this function with no mask, in which case the data retrieved may contain saturated pixels at different position and wavelengths that were propagated in the conversion to physical units. This is not advisible in general analysis, but might be of interest for specific processing and in exploring and understanding the data.
+
+```{r}
+( cb <- read_cube(fl.rad, mask = mk) )
+```
+
+## Visualizing data
+
+We can visualize an RGB composite of the data with the function cube_rgb. This function is not very flexible in scaling of the data to stretch contrast and illumination, but it does provide options for a log scaling (log = TRUE, default) or a linear scaling (e.g., log = FALSE and fact = 0.9). It is also possible to visualize any false color composite by passing the wavelengths that should be used for RGB channels.
+
+```{r, fig.dim = c(4, 3.5)}
+cube_rgb(cb, log = FALSE, fact = 0.8)
+```
+
+## Normalization to reflectance
+
+The calibrated exitant radiance acquired by the sensor has to be normalized to reflectance to reduce the influence of the spectral quality and quantity of the incident light field. There is one function with two methods available for the normalization if a surface of known reflectance (reference) is present in the image. Since the position of the reference on teh image can vary, this function requires interaction with the user. First the user is prompted to select the lower left (LL) and upper right (UR) of the image to process. This can help to reduce the data size and speed up processing if sample is small. The second step requiring interaction is the selection of the reference area in the image. There are 
+
+```{r, eval = FALSE}
+r8h <- system.file("extdata", "kodak_grey_card.csv", package = "surfspec")
+rf  <- cube_refl(cb, rho = r8h, method = "along")
+```
+```{r, echo = FALSE}
+r8h <- system.file("extdata", "kodak_grey_card.csv", package = "surfspec")
+```
+```{r, fig.dim = c(8, 4)}
+par(mar = c(5, 5, 3, 2), mfcol = c(1, 2))
+plot(cb[[36]], main = "Select LL and UR of area to process", legend = FALSE)
+cube_rgb(cb, log = FALSE, main = "Select LL and UR of area to process", add = TRUE)
+rect(xleft = 20, ybottom = 20, xright = 676, ytop = 500, lwd = 1)
+plot(cb[[36]], main = "Select upper and lower limit of reference")
+```
+```
+

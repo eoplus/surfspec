@@ -1,0 +1,2 @@
+*.cube filter=lfs diff=lfs merge=lfs -text
+*.float filter=lfs diff=lfs merge=lfs -text

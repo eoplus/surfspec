@@ -1,0 +1,24 @@
+Package: surfspec
+Title: PAE tools for imaging spectroscopy
+Version: 0.1
+Authors@R: c(person("Alexandre", "Castagna", email = "alexandre.castagna@ugent.be", role = c("aut", "cre")),
+             person("Dorian", "Bas", email = "dorian.bas@uantwerpen.be", role = "ctb"))
+Description: This package provide functions for imaging spectroscopy tailored 
+    for the needs of the Protistology and Aquatic Ecology (PAE) research group at 
+    Ghent University, Belgium. Those needs are: in air hemispherical-directional
+    reflectance of macrophytes and sediments cores.
+Depends: 
+    R (>= 3.3.0),
+    sp (>= 1.3.0),
+    raster (>= 2.6.0),
+    rgdal (>= 1.3.0)
+Imports:
+    magrittr (>= 1.5)
+License: GPL-3
+LazyData: true
+Encoding: UTF-8
+RoxygenNote: 7.0.2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
