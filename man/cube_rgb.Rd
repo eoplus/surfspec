@@ -9,7 +9,7 @@ cube_rgb(
   bands,
   wave = c(650, 570, 480),
   add = FALSE,
-  log = TRUE,
+  log = FALSE,
   fact = 0.9,
   main = "",
   ...

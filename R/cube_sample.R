@@ -2,7 +2,7 @@
 #' Sample hyperspectral cube with points or lines
 #'
 #' @param n      The number of samples to take.
-#' @param cube   The hyperspectra cube returned by the function \code{cube_read}
+#' @param cube   The hyperspectral cube returned by the function \code{cube_read}
 #' @param type   The type of sample. One of "points" or "lines".
 #' @param buffer Buffer to be used if type == "points". Defaults to 0.
 #' @param dir    Direction to be sampled if type == "lines". One of "x" or "y". 
@@ -112,7 +112,7 @@ cube_sample <- function(n, cube, type = c("points", "lines"), buffer = 0,
   cube_rgb(cube, ...)
 
   if(missing(reuse)) {
-    cols      <- rev(rainbow(n, start = 0, end = 0.8)) 
+    cols      <- rev(rainbow(n, start = 0, end = 0.8))
     sample.sp <- list()
     for(i in 1:n) {
       xy <- locator(2)
@@ -132,6 +132,9 @@ cube_sample <- function(n, cube, type = c("points", "lines"), buffer = 0,
       stop("Cannot reuse points to sample lines", call. = FALSE)
     n         <- reuse$n
     sample.sp <- reuse$sp
+
+    cols <- rev(rainbow(n, start = 0, end = 0.8))
+    plot(sample.sp, add = T, lwd = 2, col = cols)
   }
 
   sample <- extract(cube, sample.sp)

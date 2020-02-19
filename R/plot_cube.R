@@ -31,7 +31,7 @@
 #' @export
 
 cube_rgb <- function(cube, bands, wave = c(650, 570, 480), add = FALSE, 
-  log = TRUE, fact = 0.9, main = "", ...) {
+  log = FALSE, fact = 0.9, main = "", ...) {
 
   if(missing(bands))
     bands <- .find_band(cube, wave)$id
@@ -49,9 +49,9 @@ cube_rgb <- function(cube, bands, wave = c(650, 570, 480), add = FALSE,
   cube[cube > 1] <- 1
 
   if(!add) {
-    if(dev.cur() != 1) dev.off()
-    dev.new(width = 8, height = 8 * nrow(cube) / ncol(cube), unit = "in")
-    par(mar = c(5, 5, 5, 5))
+    #if(dev.cur() != 1) dev.off()
+    #dev.new(width = 8, height = 8 * nrow(cube) / ncol(cube), unit = "in")
+    par(mar = c(5, 5, 3, 3))
     plot(NA, xlim = extent(cube)[1:2], ylim = extent(cube)[3:4], 
       xlab = "Scan line", ylab = "Row", xaxs = "i", yaxs = "i", 
       main = main, asp = 1)

@@ -17,7 +17,7 @@ cube_sample(
 \arguments{
 \item{n}{The number of samples to take.}
 
-\item{cube}{The hyperspectra cube returned by the function \code{cube_read}}
+\item{cube}{The hyperspectral cube returned by the function \code{cube_read}}
 
 \item{type}{The type of sample. One of "points" or "lines".}
 

@@ -118,21 +118,11 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   cat("done!\n")
 
   cat("Processing reflectance...")
-  reflm <- matrix(NA, ncol = ncol(cube), nrow = raster::nlayers(cube))                  
 
-  for(j in 1:128) {
-    reflm[j, ] <- values(refp[[j]]) %>%
-                  matrix(., ncol = ncol(refp)) %>%
-                  apply(., 2, mean, na.rm = TRUE)
-
-#    Not sure why it is not working...
-#    reflm[j, ] <- as.matrix(refp[[j]]) %>%
-#                  apply(., 2, mean, na.rm = TRUE)
-
-  }
+  reflm  <- t(raster::colSums(refp)  / nrow(refp))
   refmat <- cube[[1]]
   for(j in 1:nlayers(cube)) {
-    values(refmat) <- rep(reflm[j, ], nrow(cube))
+    values(refmat) <- rep(reflm[j, ], each = nrow(cube))
     refmat <- refmat * (pi / rho[j, 2])
     cube[[j]] <- (cube[[j]] / refmat) * pi
    }

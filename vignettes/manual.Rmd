@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 This tutorial will guide through an analysis process to demonstrate the intended use of the tools. Throughout this document we will use a sample data of a sediment disk. The goal of the data and analysis is to retrieve a vertical profile of phytobenthos distribution. 
 
-The sediment disk was sampled in the Scheldt estuary, Belgium, with a contact core having 2 cm radius and 2 mm depth, and preserved in liquid nitrogen until analysis. While frozen, the disk was broken in two halves. One half had the upper surface imaged, while the other had its cross-sectional surface imaged. The imaging spectrometer was a SOC-710P (Surface Optics Corporation, San Diego, US), with 128 bands covering the range from 377.80 nm to 1035.97 nm with a 5 nm spectral sampling. This imaging system had an Instantaneus Field of View (IFOV) of 0.2507 mrad, that translates to 80 $\mu m$ resolution with our measurement setup.
+The sediment disk was sampled in the Scheldt estuary, Belgium, with a contact core having 2 cm radius and 2 mm depth, and preserved in liquid nitrogen until analysis. While frozen, the disk was broken in two halves. One half had the upper surface imaged, while the other had its cross-sectional surface imaged. The imaging spectrometer was a SOC-710P (Surface Optics Corporation, San Diego, US), with 128 bands covering the range from 377.80 nm to 1035.97 nm with a 5 nm spectral sampling. This imaging system had an Instantaneus Field of View (IFOV) of 0.2507 mrad, that translates to 80 $\mu$m resolution with our measurement setup.
 
 The images recorded by the system were processed with the vendor's software to convert the raw digital counts to physical units and apply all necessary corrections (smile correction, flat field corrections, etc). The digital counts data were termed "raw" and the calibrated data (radiance) termed "rad":
 
@@ -28,54 +28,160 @@ fl.rad <- system.file("extdata", "sed_95.80801ms_f11_AP1.5_rad.cube.float", pack
 
 ## The saturation mask
 
-Despite optimizations for the integration time, it may be the case that pixels or regions in the area being scanned will be saturated (maximum digital count of the system). Those can happen surfaces with specular reflectance (e.g., glint) and in areas or wavelength ranges were material exitant radiance * detector band response is much higher than for the image average or spectral average. When converting to physical units, those saturated pixels can be harder to detect since their values will vary per image. 
+Despite optimizations for the integration time, it may be the case that pixels or regions in the area being scanned will be saturated (maximum digital count of the system). Those can happen over surfaces with specular reflectance (e.g., glint) and in areas or wavelength ranges were material exitant radiance * detector band response is much higher than for the image average or spectral average. When converting to physical units, those saturated pixels can be harder to detect since their values will vary per image. 
 
-The saturation mask function loads the raw hyperspectral cube and creates a mask of saturated values. If run with the defaults the function will return a single mask, where a pixel is set to NA if it is saturated in any of the bands. This is useful if the exitant radiance * detector band response is within a range that can be accommodated in the radiometric resolution of the instrument for all bands. However, different situations might occur, e.g., for a material with low refletcance in the visible but high reflectance in the NIR. In that case in order to achieve appropriate signal to noise ratio in the visible it might be necessary to saturate the NIR range if the integration time is spectrally constant. A second image of the same surface can then be made underexposing in the visible to not saturate in the NIR. In those cases the saturation mask function can be called with defined wavelength ranges, e.g, wrange = c(400, 700) in the first image and wrange = c(700, 1500) for the second one. 
+The saturation mask function `mask_s` loads the raw hyperspectral cube and creates a mask of saturated values. If run with the default options, the function will return a single mask, where a pixel is set to NA if it is saturated in any band. This is useful if the exitant radiance * detector band response is within a range that can be accommodated in the radiometric resolution of the instrument for all bands. However, different situations might occur, e.g., for a material with low refletcance in the visible but high reflectance in the NIR. In that case in order to achieve appropriate signal to noise ratio in the visible it might be necessary to saturate the NIR range (considering that the integration time is spectrally constant). A second image of the same surface can then be made underexposing in the visible to not saturate in the NIR. In those cases the saturation mask function can be called with defined wavelength ranges, e.g, wrange = c(400, 700) in the first image and wrange = c(700, 1500) for the second one. 
 
-It is also possible to use a set of specific wavelenths for the saturation mask. This is of interest when only specific bands will be used in further analysis (e.g., NDVI calculation). This can be done by passiA vector with specific wavelengths (the bands with closest central wavelengths will be used) can also be passed. Note that in those cases, is the user's responsibility to only use in their final analysis the subset of bands that were used for the saturation mask calculations.
+It is also possible to use a set of specific wavelengths for the saturation mask. This is of interest when only specific bands will be used in further analysis (e.g., NDVI calculation). This can be done by passing a vector with specific wavelengths (the bands with closest central wavelengths will be used). Note that in those cases, is the user's responsibility to only use in their final analysis the subset of bands that were used for the saturation mask calculations.
 
-An option that bypasses the need to care on wavelength ranges is to set argument layers to TRUE. In that case the returned mask is a raster stack with a mask per layer, but will be slower than processing only a defined range if only a defined range is necessary. This option is also useful in exploring the data to know in which bands the saturation happens to better plan future acquisitions. 
+An option that bypasses the need to care on wavelength ranges is to set argument layers to TRUE. In that case the returned mask is a raster stack with a mask per layer, but will be slower than processing only a defined range if only a defined range is necessary. The result, however, is more flexible if data is to be stored for different possible uses. This option is also useful in exploring the data to know in which bands the saturation happens and better plan future acquisitions. 
 
-In the following example, we will run the saturation mask function with the defaults (using all bands and returning a single mask as a raster layer).
+In the following example, we will run the saturation mask function only for bands that will be used in the NDVI calculation.
 
-```{r, fig.dim = c(5, 4)}
-( mk <- mask_s(fl.raw) )
-plot(mk, colNA = 'red', col = "white", main = "Saturated pixels")
+```{r, fig.dim = c(5, 4), fig.align = "center", fig.cap = "Saturation mask for the combination of the closest bands centered at 670 nm and 710 nm."}
+( mk <- mask_s(fl.raw, wave = c(670, 710)) )
+
+par(mar = c(3, 3, 3, 3))
+plot(mk, colNA = 'red', col = "white", legend = FALSE, 
+  main = "Saturated pixels shown in red")
 ```
 
 ## Reading and masking the calibrated data
 
-Once the saturation mask was calculated, we can import and mask the calibrated data. This is performed with the function read_cube by passing the mask as the second argument. It is also possible to call this function with no mask, in which case the data retrieved may contain saturated pixels at different position and wavelengths that were propagated in the conversion to physical units. This is not advisible in general analysis, but might be of interest for specific processing and in exploring and understanding the data.
+Once the saturation mask was calculated, we can import and mask the calibrated data. This is performed with the function `read_cube` by passing the mask as the second argument. It is also possible to call this function without a mask, in which case the data retrieved may contain saturated pixels at different position and wavelengths that were propagated in the conversion to physical units. This is not advisable in general analysis, but might be of interest for specific processing and in exploring and understanding the data.
 
 ```{r}
-( cb <- read_cube(fl.rad, mask = mk) )
+( cb <- cube_read(fl.rad, mask = mk) )
 ```
 
-## Visualizing data
+We can visualize an RGB composite of the data with the function `cube_rgb`. This is a basic function in the sense that it lacks flexibility in scaling of the data to stretch contrast and illumination, but is intended for general visualization of the data in interactive functions. It provide options for a log scaling (log = FALSE, default) or a linear scaling (e.g., log = FALSE and fact = 0.9). It is also possible to visualize any false color composite by passing the wavelengths that should be used for RGB channels. The default is a true color composite using the closest bands to 650 nm, 570 nm, 480 nm.
 
-We can visualize an RGB composite of the data with the function cube_rgb. This function is not very flexible in scaling of the data to stretch contrast and illumination, but it does provide options for a log scaling (log = TRUE, default) or a linear scaling (e.g., log = FALSE and fact = 0.9). It is also possible to visualize any false color composite by passing the wavelengths that should be used for RGB channels.
-
-```{r, fig.dim = c(4, 3.5)}
-cube_rgb(cb, log = FALSE, fact = 0.8)
+```{r, fig.dim = c(5, 4), fig.align = "center", fig.cap = "True color composite of the sediment sample based on the exitant radiance."}
+cube_rgb(cb, fact = 0.8)
 ```
 
 ## Normalization to reflectance
 
-The calibrated exitant radiance acquired by the sensor has to be normalized to reflectance to reduce the influence of the spectral quality and quantity of the incident light field. There is one function with two methods available for the normalization if a surface of known reflectance (reference) is present in the image. Since the position of the reference on teh image can vary, this function requires interaction with the user. First the user is prompted to select the lower left (LL) and upper right (UR) of the image to process. This can help to reduce the data size and speed up processing if sample is small. The second step requiring interaction is the selection of the reference area in the image. There are 
+The calibrated exitant radiance recorded by the sensor has to be normalized to reflectance to reduce the influence of the spectral quality and quantity of the incident light field. This will increase the covariance of the radiometric information with the desired physical property (e.g., Chl a content) across samples and illumination conditions. The term "reflectance" is used here in the sense of Lambertian equivalent bi-hemispherical reflectance, $\rho$, that is, the exitant radiance integrated over the upper hemisphere normalized by the incident downwelling irradiance. The "Lambertian equivalent" term comes from the extrapolation from the exitant radiance measured in a small solid angle centered in the view direction to the exitant radiance over the hemisphere, by assuming that the surface under measurement is Lambertian, that is, constant exitant radiance in all directions. The same assumption of Lambertian properties is also made for the diffuse reflector reference placed on the image. The scaling factor from the (measured) hemispherical-directional reflectance to the Lambertian equivalent bi-hemispherical reflectance is $\pi$ steradians.
+
+Note that reflectance can also be calculated on the uncalibrated (raw) data if a reference diffuse reflector is present on the image. However this is not advisable since in the processing of calibrating the image to physical units, several corrections are applied (wavelength smile correction, flat field spatial correction, etc).
+
+The function `cube_refl` is provided with two methods for the normalization if a surface of known reflectance (reference) is present in the image. Since the position of the reference on the image can vary, this function requires interaction with the user. First the user is prompted to select the lower left (LL) and upper right (UR) extent of the image to process. This can help to reduce the data size and speed up processing if sample is small - but note that the reference diffuse reflector has to be inside the selected extent. The second step requiring interaction is the selection of the reference diffuse reflector area on the image. If the reference diffuse reflector is placed along the scan line (i.e., covering the same scan lines as the target) the selection is simple and involve delimiting the upper and lower limits of the reference plaque. The downwelling irradiance will then be calculated per scan line, making it possible to work under potentially unstable illumination (natural light). Note that all rows in a given scan line inside the area defined as reference are used for calculating the average light per scan line. Therefore, it is necessary that the limits of the reference are defined such that only the reference diffuse reflector is inside the selected area. 
+
+The second method is a single downwelling light calculation, averaging all the pixels in the polygon drawn by the user. This is can reduce noise influence on illumination calculations from larger sample average but should only be used under spatio-temporaly constant illuminations (e.g., open space under clear skies with low sun zenith angle or artificial diffuse illumination). Note that what is necessary for the reflectance calculation is that the illumination over the reference diffuse reflector be equal to the illumination over the target and accurate reflectance determinations of the reference diffuse reflector (e.g., NIST traceable).
+
+Our example dataset was collected under natural illumination, so its reflectance will be calculated per scan line:
 
 ```{r, eval = FALSE}
-r8h <- system.file("extdata", "kodak_grey_card.csv", package = "surfspec")
+r8h <- system.file("extdata", "kodak_grey_card.csv", package = "surfspec") %>%
+       read.csv()
 rf  <- cube_refl(cb, rho = r8h, method = "along")
+#> Select the lower left and upper right corners of the area to process
+#> Accept (y | n)? y
+#> Croping selected area...done!
+#> Select the lower and upper borders of the reference plaque
+#> Accept (y | n)? y
+#> Croping reference area...done!
+#> Processing reflectance...done!
+#> Writing cube to disk...Finished!
+cube_rgb(rf, fact = 0.8)
 ```
-```{r, echo = FALSE}
-r8h <- system.file("extdata", "kodak_grey_card.csv", package = "surfspec")
-```
-```{r, fig.dim = c(8, 4)}
+
+```{r, fig.dim = c(7, 3.5), echo = FALSE, fig.align = "center", fig.cap = "Interactive processing to reflectance.", message=FALSE}
+library(magrittr)
 par(mar = c(5, 5, 3, 2), mfcol = c(1, 2))
-plot(cb[[36]], main = "Select LL and UR of area to process", legend = FALSE)
-cube_rgb(cb, log = FALSE, main = "Select LL and UR of area to process", add = TRUE)
-rect(xleft = 20, ybottom = 20, xright = 676, ytop = 500, lwd = 1)
-plot(cb[[36]], main = "Select upper and lower limit of reference")
+cube_rgb(cb, log = FALSE, main = "Select LL and UR of area to process")
+rect(xleft = 110, ybottom = 200, xright = 420, ytop = 455, lwd = 1, border = "red")
+rf  <- crop(cb, extent(110, 420, 200, 455))
+cube_rgb(rf, log = FALSE, main = "Select upper and lower limit of reference")
+rect(xleft = 110, ybottom = 350, xright = 420, ytop = 455, lwd = 2, border = "red")
+tp  <- crop(rf, extent(110, 420, 350, 455))
+r8h <- read.csv(system.file("extdata", "kodak_grey_card.csv", package = "surfspec"))
+reflm  <- t(colSums(tp)  / nrow(tp))
+refmat <- rf[[1]]
+for(j in 1:nlayers(rf)) {
+  values(refmat) <- rep(reflm[j, ], each = nrow(rf))
+  refmat <- refmat * (pi / r8h[j, 2])
+  rf[[j]] <- (rf[[j]] / refmat) * pi
+}
+attr(rf, "metadata") <- attr(cb, "metadata")
 ```
+
+```{r, echo = FALSE, fig.dim = c(5, 4), fig.align = "center", fig.cap = "True color composite of the sediment sample based on $\rho$."}
+cube_rgb(rf, fact = 0.8)
 ```
+
+As a final note, the stability of the illumination setup can (should) be tested, by imaging a homogeneous diffuse surface (e.g., a large reference diffuse reflector). Spatial and temporal changes can normally be well identified unless a single gradient aligned to the scan direction is observed. In that case, data can be processed per scan line and per area (beginning of the scan) to separate spatial and temporal effects.
+
+## Sampling reflectance spectra
+
+While several common types of processing can be applied to the whole image (in digital counts, radiance or reflectance) there is often the need to extract information over a defined area or pixels of the image. The function `cube_sample` is provided with two sampling types: point (or circle) and line. This function is a convenient wrapper for the raster extract function, and the return object keeps relevant metadata in its attributes to allow future plots based on the samples to include the spatial geometries used in the extraction and even to reuse those geometries for a new extraction (either on the same image processed with different parameters or over different images aligned such that relative positions of the target are the same on the image frame).
+
+When sampling points is possible to define a buffer in pixel units such that the point is converted to a circle with radius equal to the buffer. No data reduction is applied at this stage and statistics can be applied on the sample object at a later stage. Another possible mode is sampling lines. Those lines are forced to be vertical or horizontal such that profiles can be calculated. It requires that the sample is aligned with the x or y image axis.
+
+For our study case we will sample per line, as vertical profiles:
+
+```{r, eval = FALSE}
+smp <- cube_sample(3, rf, type = "lines")
+```
+
+```{r, echo = FALSE, fig.dim = c(5, 4), fig.align = "center", fig.cap = "Interactive sampling with lines."}
+x <- matrix(c(217.5833, 217.5833, 261.6981, 261.6981, 343.5497, 343.5497), 
+  ncol = 2, nrow = 3, byrow = TRUE)
+y <- matrix(c(294.7184, 248.9691, 294.7184, 250.0331, 290.9946, 248.9691), 
+  ncol = 2, nrow = 3, byrow = TRUE)
+sample.sp <- list()
+xyi       <- list()
+for(i in 1:3) {
+  xyi$x <- x[i,]
+  xyi$y <- y[i,]
+  sample.sp[[i]] <- SpatialLines(list(Lines(list(Line(xyi)), 
+    ID = as.character(i))))
+}
+sample.sp <- do.call(rbind, sample.sp)
+smp <- list(
+  type = "lines",
+  n  = 3,
+  sp = sample.sp
+)
+smp <- cube_sample(3, rf, type = "lines", reuse = smp)
+```
+
+We can visualize those data with the function `sample_plot`, which provides basic visualization. It is possible to add every pixel to the plot, or just descriptive statistics of location and dispersion (defaults are `mean` and `sd`). It is also possible to subset the samples to include only a given sample with argument `id`. In the example below we will show the descriptive statistics of the first two samples.
+
+```{r, fig.dim = c(7, 3.5), fig.align = "center", fig.cap = "Vizualizing descriptive statistcs for the samples."}
+sample_plot(rf, smp, summary = TRUE, loc = mean, disp = sd, na.rm = T, id = c(2, 3))
+```
+
+A wrapper to easily extract the numerical values of the descriptive statistics is the function `sample_stat`, called internally by `sample_plot` when argument `summary = TRUE`. It applies a function to the data - but note that the function should return a single value (like `mean`).
+
+```{r, eval = FALSE}
+sample_stat(smp, mean, single = FALSE, na.rm = TRUE)[1:5, 1:5]
+```
+
+## Extracting all profiles
+
+Our particular interest with this example is to extract the average vertical profile distribution of phythobenthos. While we could manually sample using several sampling lines, this is not ideal. First because manually drawing lines will insert uncertainty on the pixel selection (i.e., may include background or might miss one or two pixels from the top or bottom). It is also not ideal because in principle, with an image where the sample is aligned with the x (or y) axis, every row or scan line is a potential sample.
+
+We will solve the first issue by image segmentation. By masking all other objects in the image other than the target surface, will be simpler to extract information only for the target. The function `cube_seg` will apply the `kmeans` function to the hyperspectral cube and allow for interactive aggregation of clusters. The function returns the same cube passed as input, with a new attribute with clusters as a raster layer. For our example we want a single final cluster, with all pixels of the sediment disk.
+
+```{r, eval = FALSE}
+rf <- cube_seg(rf, type = "kmeans", centers = 10)
+#> Select the lower left and upper right corners of the area to process
+#> Croping selected area...done!
+#> Clustering...done!
+#> Input the number of final aggregated clusters: 1
+#> Select clusters to be aggregated as cluster 1 (right click to  finish)
+#> Finished!
+
+plot(attr(rf, "metadata")$cluster)
+```
+
+```{}
+
+```
+While it is possible to sample profiles per line, , the objective is to calculate the average NDVI vertical profile. This could be performed by manually sampling many lines, but this process can be automated by extracting all profiles in an image (one per column or row, depending on the image orientation).
+
+
+
 
