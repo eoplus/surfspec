@@ -84,7 +84,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
     cube_rgb(cube, log = FALSE, main = "Select LL and UR of area to process")
     lim <- locator(2)
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
-    plot(cropext, add = TRUE)
+    plot(cropext, add = TRUE, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
     if(accept == "y") break
   }
@@ -106,7 +106,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
     cube_rgb(cube, log = FALSE, main = "Select upper and lower limit of reference")
     lim <- locator(2)
     refpext <- raster::extent(cubeext[1], cubeext[2], lim$y[2], lim$y[1])
-    plot(refpext, add = T, col = "blue")
+    plot(refpext, add = T, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n=1)
     if(accept == "y") break
   }

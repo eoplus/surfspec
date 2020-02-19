@@ -3,28 +3,44 @@
 #'
 #' Performs image segmentation with the kmeans algorithm.
 #'
-#' @param cube The hyperspectral cube returned by the function \code{cube_read}
-#' @param type Type of image segmentation. 'kmeans' is the only accepted value.
-#' @param ...  Arguments to be passed to \code{kmeans}.
+#' @param cube   The hyperspectral cube returned by the function \code{cube_read}
+#' @param type   Type of image segmentation. 'kmeans' is the only accepted value.
+#' @param lclump Logical. Keep only the largest clump? See Details.
+#' @param ...    Arguments to be passed to \code{kmeans}.
+#'
+#' @details This function provides an interactive too to classify and reclassify 
+#' (aggregate) the image in clusters.
+#' 
+#' If lclump is TRUE, after image classification and possibly reclassification, 
+#' the \code{clump} function of the raster package is called to identify clumps
+#' of contiguous pixels. This is a spatial classification. Only the largerst 
+#' clump will be kept. This is a fine tune aid to the spectral classification 
+#' when trying to extract a single contigous region (target surface) and the 
+#' spectral classification results in isolated pixels or small clumps of pixels
 #'
 #' @return The same cube as the input, with the clusters as a raster layer in 
 #' the attribute 'metadata'.
 #'
 #' @export
 
-
-cube_seg <- function(cube, type = "kmeans", ...) {
+cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
 
   if(type == "kmeans") {
-    .cube_seg_kmeans(cube, ...)
+    cube <- .cube_seg_kmeans(cube, lclump, ...)
   } else {
     stop("At the current version the only implemented method is kmeans", 
       call. = FALSE)
   }
 
+  if(plot) {
+    plot(attr(cube, "metadata")$cluster)
+  }
+
+  cube
+
 }
 
-.cube_seg_kmeans <- function(cube, ...) {
+.cube_seg_kmeans <- function(cube, lclump, ...) {
 
   meta  <- attr(cube, "metadata")
   cbext <- extent(cube)
@@ -35,7 +51,7 @@ cube_seg <- function(cube, type = "kmeans", ...) {
     cube_rgb(cube, log = FALSE, main = "Select LL and UR of area to process")
     lim <- locator(2)
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
-    plot(cropext, add = TRUE)
+    plot(cropext, add = TRUE, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
     if(accept == "y") break
   }
@@ -55,22 +71,22 @@ cube_seg <- function(cube, type = "kmeans", ...) {
   cat("Clustering...")
   val <- raster::values(cube_s)
   id  <- as.logical(apply(val, 1, sum))
-  clf <- kmeans(val[which(!is.na(id)), ], centers, ...)
+  clf <- kmeans(val[which(!is.na(id)), ], ...)
   val[which(!is.na(id)), 1] <- clf$cluster
   clfr <- cube_s[[1]]
   values(clfr) <- val[, 1] * id
   cat("done!\n")
 
-  if(length(centers) == 1) {
-    n <- centers
+  if(length(list(...)$centers) == 1) {
+    n <- list(...)$centers
   } else {
-    n <- ncol(centers)
+    n <- ncol(list(...)$centers)
   }
 
   cols <- n %>%
           rainbow(start = 0, end = 0.8) %>%
           rev()
-  raster::plot(clfr_agg, main = "Clusters", 
+  raster::plot(clfr, main = "Clusters", 
           col = colorRampPalette(cols)(256), legend = FALSE)
 
   nclst <- n
@@ -113,6 +129,13 @@ cube_seg <- function(cube, type = "kmeans", ...) {
     }
     clfr_agg[clfr_agg < n] <- NA
     clfr_agg <- clfr_agg - n
+  }
+
+  if(lclump) {
+    clfr_sp <- raster::clump(clfr_agg)
+    tb      <- table(raster::values(clfr_sp))
+    id      <- as.numeric(names(sort(tb, decreasing = TRUE))[1])
+    clfr_agg[clfr_sp != id] <- NA
   }
 
   clfr <- extend(clfr_agg, cbext)
