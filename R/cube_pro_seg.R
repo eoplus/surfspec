@@ -36,7 +36,7 @@ cube_pro_seg <- function(cube, dir = "y") {
          raster::as.array()
 
   nr  <- nrow(sed)
-  dr <- 1:nr
+  idr <- 1:nr
   for(i in 1:ncol(sed)) {
     ids <- which(!is.na(sed[, i, 1]))
     if(length(ids) == 0) {

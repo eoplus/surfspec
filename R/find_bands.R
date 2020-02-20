@@ -3,7 +3,7 @@
 #'
 #' This is an internal function to find the index of bands most closely matching
 #' the requested wavelength. The matching is made by minimum absolute 
-# difference. \code{order} is used and will define behavior if the minimum is 
+#' difference. \code{order} is used and will define behavior if the minimum is 
 #' reached by two bands, selecting the lower wavelength one.
 
 .find_band <- function(cube, wave) {

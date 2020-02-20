@@ -27,8 +27,11 @@ cube_read <- function(file, mask) {
     paste("File", file, "not found") %>%
     stop(call. = FALSE)
   }
-  if(!missing(mask) && !is(mask, "Raster")) {
-      stop("mask must be a raster object")
+
+  if(!missing(mask)) {
+    if(!is(mask, "Raster")) {
+      stop("mask must be a raster object", call. = FALSE)
+    }
   }
 
   hdr  <- gsub(".cube$|.float$", ".hdr", file) %>%

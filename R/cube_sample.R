@@ -35,7 +35,7 @@
 #' @export
 
 cube_sample <- function(n, cube, type = c("points", "lines"), buffer = 0, 
-  dir = "y", reuse, ...) {
+  dir = "y", use.roi = FALSE, reuse, ...) {
 
   argsl <- as.list(match.call()[-1])
   if(type == "points") {
@@ -48,9 +48,18 @@ cube_sample <- function(n, cube, type = c("points", "lines"), buffer = 0,
 
 }
 
-.cube_sample_points <- function(n, cube, buffer = 0, reuse, ...) {
+.cube_sample_points <- function(n, cube, buffer = 0, use.roi = FALSE, reuse, ...) {
 
   cube_rgb(cube, ...)
+
+  if(use.roi) {
+    roi <- attr(cube, "metadata")$cluster
+    if(is.null(roi)) {
+      stop("cube does not have a cluster metadata attribute. See ?cube_seg", 
+        call. = FALSE)
+    }
+    cube <- mask(cube, roi)
+  }
 
   cols      <- rev(rainbow(n, start = 0, end = 0.8))
   xyl       <- list()
@@ -107,9 +116,18 @@ cube_sample <- function(n, cube, type = c("points", "lines"), buffer = 0,
 
 }
 
-.cube_sample_lines <- function(n, cube, dir = "y", reuse, ...) {
+.cube_sample_lines <- function(n, cube, dir = "y", use.roi = FALSE, reuse, ...) {
 
   cube_rgb(cube, ...)
+
+  if(use.roi) {
+    roi <- attr(cube, "metadata")$cluster
+    if(is.null(roi)) {
+      stop("cube does not have a cluster metadata attribute. See ?cube_seg", 
+        call. = FALSE)
+    }
+    cube <- mask(cube, roi)
+  }
 
   if(missing(reuse)) {
     cols      <- rev(rainbow(n, start = 0, end = 0.8))

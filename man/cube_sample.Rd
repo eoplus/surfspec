@@ -10,6 +10,7 @@ cube_sample(
   type = c("points", "lines"),
   buffer = 0,
   dir = "y",
+  use.roi = FALSE,
   reuse,
   ...
 )

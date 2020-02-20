@@ -86,7 +86,7 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
   cols <- n %>%
           rainbow(start = 0, end = 0.8) %>%
           rev()
-  raster::plot(clfr, main = "Clusters", 
+  raster::plot(clfr, main = "Clusters", xlab = "Scan line", ylab = "Row",
           col = colorRampPalette(cols)(256), legend = FALSE)
 
   nclst <- n
@@ -106,11 +106,13 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
                 rainbow(start = 0, end = 0.8) %>%
                 rev()
         raster::plot(clfr_agg, main = "Select the clusters to aggregate", 
-          col = colorRampPalette(cols)(256), legend = FALSE)
+          col = colorRampPalette(cols)(256), legend = FALSE, xlab = "Scan line", 
+          ylab = "Row")
 
         clfr_t <- clfr_agg
         xy     <- locator(1000)
-        vals   <- extract(clfr, SpatialPoints(xy))
+        vals   <- raster::extract(clfr, sp::SpatialPoints(xy)) %>%
+                  unique()
         for(j in 1:length(vals)) {
           clfr_t[clfr_t == vals[j]] <- n + i
         }
@@ -127,15 +129,17 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
         }
       }
     }
-    clfr_agg[clfr_agg < n] <- NA
+    clfr_agg[clfr_agg <= n] <- NA
     clfr_agg <- clfr_agg - n
   }
 
   if(lclump) {
+    cat("Finding largest clump...")
     clfr_sp <- raster::clump(clfr_agg)
     tb      <- table(raster::values(clfr_sp))
     id      <- as.numeric(names(sort(tb, decreasing = TRUE))[1])
     clfr_agg[clfr_sp != id] <- NA
+    cat("done!\n")
   }
 
   clfr <- extend(clfr_agg, cbext)

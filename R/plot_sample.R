@@ -66,7 +66,7 @@ sample_plot <- function(cube, sample, id, summary = TRUE, loc = mean,
     cols_bg <- length(sample$data) %>%
                rainbow(start = 0, end = 0.8, alpha = 0.1) %>%
                rev()
-    plot(NA, xlim = range(wave), ylim = range(rbind(ymn, ymx), na.rm = TRUE), 
+    plot(NA, xlim = range(wave), ylim = range(rbind(ymn, ymx, dl), na.rm = TRUE), 
       xlab = xlab, ylab = ylab)
     for(i in id) {
       polygon(x = c(wave, rev(wave)), y = c(ymn[i, ], rev(ymx[i, ])), 
@@ -77,6 +77,10 @@ sample_plot <- function(cube, sample, id, summary = TRUE, loc = mean,
     }
 
   } else {
+
+print(id)
+print(range(unlist(sample$data[id]), na.rm = TRUE))
+
 
     plot(NA, xlim = range(wave), ylim = range(unlist(sample$data[id]), na.rm = TRUE), 
       xlab = xlab, ylab = ylab)
