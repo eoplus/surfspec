@@ -132,8 +132,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   if(missing(dir)) dir <- getwd()
   if(missing(fln)) {
     fln <- rev(unlist(strsplit(meta$fln, "/")))[1] %>%
-           paste0(., ".refl.envi") %>%
-           file.path(dir, .)
+           paste0(., ".refl.envi")
   }
 
   raster::writeRaster(cube, filename = file.path(dir, fln), 
@@ -218,8 +217,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   if(missing(dir)) dir <- getwd()
   if(missing(fln)) {
     fln <- rev(unlist(strsplit(meta$fln, "/")))[1] %>%
-           paste0(., ".refl.envi") %>%
-           file.path(dir, .)
+           paste0(., ".refl.envi")
   }
   raster::writeRaster(cube, filename = file.path(dir, fln), 
     options = "INTERLEAVE=BIL", overwrite = TRUE, format = "ENVI", 

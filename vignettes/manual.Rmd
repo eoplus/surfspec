@@ -20,7 +20,7 @@ The sediment disk was sampled in the Scheldt estuary, Belgium, with a contact co
 
 The images recorded by the system were processed with the vendor's software to convert the raw digital counts to physical units and apply all necessary corrections (smile correction, flat field corrections, etc). The digital counts data were termed "raw" and the calibrated data (radiance) termed "rad":
 
-```{r setup}
+```{r setup, message = FALSE}
 library(surfspec)
 fl.raw <- system.file("extdata", "sed_95.80801ms_f11_AP1.5.cube", package = "surfspec")
 fl.rad <- system.file("extdata", "sed_95.80801ms_f11_AP1.5_rad.cube.float", package = "surfspec")
@@ -107,7 +107,7 @@ for(j in 1:nlayers(rf)) {
 attr(rf, "metadata") <- attr(cb, "metadata")
 ```
 
-```{r, echo = FALSE, fig.dim = c(5, 4), fig.align = "center", fig.cap = "True color composite of the sediment sample based on $\rho$."}
+```{r, echo = FALSE, fig.dim = c(5, 4), fig.align = "center", fig.cap = "True color composite of the sediment sample based on $\\rho$."}
 cube_rgb(rf, fact = 0.8)
 ```
 
@@ -117,7 +117,7 @@ As a final note, the stability of the illumination setup can (should) be tested,
 
 While several common types of processing can be applied to the whole image (in digital counts, radiance or reflectance) there is often the need to extract information over a defined area or pixels of the image. The function `cube_sample` is provided with two sampling types: point (or circle) and line. This function is a convenient wrapper for the raster extract function, and the return object keeps relevant metadata in its attributes to allow future plots based on the samples to include the spatial geometries used in the extraction and even to reuse those geometries for a new extraction (either on the same image processed with different parameters or over different images aligned such that relative positions of the target are the same on the image frame).
 
-When sampling points is possible to define a buffer in pixel units such that the point is converted to a circle with radius equal to the buffer. No data reduction is applied at this stage and statistics can be applied on the sample object at a later stage. Another possible mode is sampling lines. Those lines are forced to be vertical or horizontal such that profiles can be calculated. It requires that the sample is aligned with the x or y image axis.
+When sampling points, it is possible to define a buffer in pixel units such that the point is converted to a circle with radius equal to the buffer. No data reduction is applied at this stage and statistics can be applied on the sample object at a later stage. Another possible mode is sampling lines. Those lines are forced to be vertical or horizontal such that profiles can be calculated. It requires that the sample is aligned with the x or y image axis.
 
 For our study case we will sample per line, as vertical profiles:
 
@@ -147,7 +147,7 @@ smp <- list(
 smp <- cube_sample(3, rf, type = "lines", reuse = smp)
 ```
 
-We can visualize those data with the function `sample_plot`, which provides basic visualization. It is possible to add every pixel to the plot, or just descriptive statistics of location and dispersion (defaults are `mean` and `sd`). It is also possible to subset the samples to include only a given sample with argument `id`. In the example below we will show the descriptive statistics of the first two samples.
+We can visualize those data with the function `sample_plot`, which provides basic visualization. It is possible to add every pixel to the plot, or just descriptive statistics of location and dispersion (defaults are `mean` and `sd`). It is also possible to subset the samples to include only a given sample with argument `id`. In the example below we will show the descriptive statistics of the first two samples. Note that in the case of cross-sectional images and line profiles, this spectral plot of summary statistics is only relevant to see if there is a change along the "x" direction, since all pixels in a given "y" direction profile of a sample are being averaged (so vertical stratification information is lost).
 
 ```{r, fig.dim = c(7, 3.5), fig.align = "center", fig.cap = "Vizualizing descriptive statistcs for the samples."}
 sample_plot(rf, smp, summary = TRUE, loc = mean, disp = sd, na.rm = T, id = c(2, 3))
@@ -237,7 +237,8 @@ Now that we have a sample mask on the object metadata, we can extract and align 
 pf <- cube_pro_seg(rf)
 
 par(mar = c(5, 5, 3, 3))
-plot((pf[[86]] - pf[[60]]) / (pf[[86]] + pf[[60]]))
+plot((pf[[86]] - pf[[60]]) / (pf[[86]] + pf[[60]]), xlab = "Scan line", 
+  ylab = "Row")
 ```
 
 
