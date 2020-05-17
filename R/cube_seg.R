@@ -97,7 +97,7 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
   if(nclst < n) {
     for(i in 1:nclst) {
       msg    <- paste("Select clusters to be aggregated as cluster", i, 
-        "(right click to  finish) \n")
+        "(right click or ESC to  finish) \n")
       accept <- "n"
       cat(msg)
       repeat {

@@ -78,11 +78,16 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
     cat("done!\n")
   }
 
-  accept <- "n"
+  cubeext <- raster::extent(cube)
+  accept  <- "n"
   cat("Select the lower left and upper right corners of the area to process\n")
   repeat {
     cube_rgb(cube, log = FALSE, main = "Select LL and UR of area to process")
     lim <- locator(2)
+    if(lim$x[1] < cubeext[1]) lim$x[1] <- cubeext[1]
+    if(lim$x[2] > cubeext[2]) lim$x[2] <- cubeext[2]
+    if(lim$y[1] < cubeext[3]) lim$y[1] <- cubeext[3]
+    if(lim$y[2] > cubeext[4]) lim$y[2] <- cubeext[4]
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
     plot(cropext, add = TRUE, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
@@ -105,6 +110,8 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   repeat {
     cube_rgb(cube, log = FALSE, main = "Select upper and lower limit of reference")
     lim <- locator(2)
+    if(lim$y[1] > cubeext[4]) lim$y[1] <- cubeext[4]
+    if(lim$y[2] < cubeext[3]) lim$y[2] <- cubeext[3]
     refpext <- raster::extent(cubeext[1], cubeext[2], lim$y[2], lim$y[1])
     plot(refpext, add = T, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n=1)
@@ -122,7 +129,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   reflm  <- t(raster::colSums(refp)  / nrow(refp))
   refmat <- cube[[1]]
   for(j in 1:nlayers(cube)) {
-    values(refmat) <- rep(reflm[j, ], each = nrow(cube))
+    values(refmat) <- rep(reflm[j, ], nrow(cube))
     refmat <- refmat * (pi / rho[j, 2])
     cube[[j]] <- (cube[[j]] / refmat) * pi
    }
@@ -160,11 +167,16 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   cnms <- names(cube)
   meta <- attr(cube, "metadata")
 
-  accept <- "n"
+  cubeext <- raster::extent(cube)
+  accept  <- "n"
   cat("Select the lower left and upper right corners of the area to process\n")
   repeat {
     cube_rgb(cube, log = FALSE, main = "Select LL and UR of area to process")
     lim <- locator(2)
+    if(lim$x[1] < cubeext[1]) lim$x[1] <- cubeext[1]
+    if(lim$x[2] > cubeext[2]) lim$x[2] <- cubeext[2]
+    if(lim$y[1] < cubeext[3]) lim$y[1] <- cubeext[3]
+    if(lim$y[2] > cubeext[4]) lim$y[2] <- cubeext[4]
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
     plot(cropext, add = TRUE)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
@@ -172,7 +184,6 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
   }
   dev.off()
 
-  cubeext <- raster::extent(cube)
   if(cropext[1] > cubeext[1] | cropext[2] < cubeext[2] | 
      cropext[3] > cubeext[3] | cropext[4] < cubeext[4]) {
     cat("Croping selected area...")
