@@ -89,7 +89,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
     if(lim$y[1] < cubeext[3]) lim$y[1] <- cubeext[3]
     if(lim$y[2] > cubeext[4]) lim$y[2] <- cubeext[4]
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
-    plot(cropext, add = TRUE, col = "red", lwd = 2)
+    raster::plot(cropext, add = TRUE, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
     if(accept == "y") break
   }
@@ -113,7 +113,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
     if(lim$y[1] > cubeext[4]) lim$y[1] <- cubeext[4]
     if(lim$y[2] < cubeext[3]) lim$y[2] <- cubeext[3]
     refpext <- raster::extent(cubeext[1], cubeext[2], lim$y[2], lim$y[1])
-    plot(refpext, add = T, col = "red", lwd = 2)
+    raster::plot(refpext, add = T, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n=1)
     if(accept == "y") break
   }
@@ -178,7 +178,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
     if(lim$y[1] < cubeext[3]) lim$y[1] <- cubeext[3]
     if(lim$y[2] > cubeext[4]) lim$y[2] <- cubeext[4]
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
-    plot(cropext, add = TRUE)
+    raster::plot(cropext, add = TRUE)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
     if(accept == "y") break
   }
