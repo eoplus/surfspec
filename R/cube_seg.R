@@ -33,7 +33,7 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
   }
 
   if(plot) {
-    plot(attr(cube, "metadata")$cluster)
+    raster::plot(attr(cube, "metadata")$cluster)
   }
 
   cube
