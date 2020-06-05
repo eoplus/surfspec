@@ -43,7 +43,7 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
 .cube_seg_kmeans <- function(cube, lclump, ...) {
 
   meta  <- attr(cube, "metadata")
-  cbext <- extent(cube)
+  cbext <- raster::extent(cube)
 
   accept <- "n"
   cat("Select the lower left and upper right corners of the area to process\n")
@@ -51,7 +51,7 @@ cube_seg <- function(cube, type = "kmeans", lclump = TRUE, plot = TRUE, ...) {
     cube_rgb(cube, log = FALSE, main = "Select LL and UR of area to process")
     lim <- locator(2)
     cropext <- raster::extent(lim$x[1], lim$x[2], lim$y[1], lim$y[2])
-    plot(cropext, add = TRUE, col = "red", lwd = 2)
+    raster::plot(cropext, add = TRUE, col = "red", lwd = 2)
     cat("Accept (y | n)? ") ; accept <- readLines(n = 1)
     if(accept == "y") break
   }
