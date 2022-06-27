@@ -126,7 +126,7 @@ cube_refl <- function(cube, dir, fln, rho, method = c("along", "area"),
 
   cat("Processing reflectance...")
 
-  reflm  <- t(raster::colSums(refp)  / nrow(refp))
+  reflm  <- t(raster::colSums(refp, na.rm = TRUE)  / nrow(refp))
   refmat <- cube[[1]]
   for(j in 1:nlayers(cube)) {
     values(refmat) <- rep(reflm[j, ], nrow(cube))
